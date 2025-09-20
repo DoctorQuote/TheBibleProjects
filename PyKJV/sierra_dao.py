@@ -10,6 +10,7 @@ https://github.com/DoctorQuote/TheBibleProjects
 '''
 import sys
 import sqlite3
+from tui import BasicTui
 
 
 class SierraDAO:
@@ -32,23 +33,27 @@ FROM SqlTblVerse AS V JOIN SqlBooks as B WHERE (B.ID=BookID) AND {zmatch} ORDER 
            }
         return result
 
-    def classic2sierra(self, book, chapt, verse):
-        # print([book, chapt, verse], file=sys.stderr)
+    def classic2sierra(self, book:str, chapt, verse)->int:
+        ''' Convert a classic scripture reference to
+            the Sierra Bible number. (primary key.)
+            Returns None on error.
+        '''
+        # BasicTui.Display([book, chapt, verse])
         cmd = f"SELECT V.ID FROM SqlTblVerse AS V JOIN SqlBooks as B \
 WHERE (B.ID=BookID) AND BOOK LIKE '%{book}%' AND BookChapterID='{chapt}' AND BookVerseID='{verse}' LIMIT 1;"
-        print(cmd, file=sys.stderr)
+        # BasicTui.Display(cmd)
         res = self.conn.execute(cmd)
         try:
             zrow = res.fetchone()
-            print(zrow, file=sys.stderr)
+            # BasicTui.Display(zrow)
             if zrow:
                 return zrow[0]
-        except:
-            raise
+        except Exception as ex:
+            BasicTui.DisplayError(ex)
         return None
             
     def search_verse(self, sierra_num):
-        ''' Lookup a single sierra verse number. Presently unloved. '''
+        ''' Lookup a single sierra verse number.'''
         for result in self.search(f"V.ID={sierra_num}"):
             yield result
 
@@ -70,8 +75,7 @@ WHERE (B.ID=BookID) AND BOOK LIKE '%{book}%' AND BookChapterID='{chapt}' AND Boo
                 yield response
                 zrow = res.fetchone()
         except Exception as ex:
-            print(ex, file=sys.stderr)
-            raise ex
+            BasicTui.DisplayError(ex)
         return None
     
     def search(self, where_clause):
@@ -96,8 +100,7 @@ WHERE (B.ID=BookID) AND BOOK LIKE '%{book}%' AND BookChapterID='{chapt}' AND Boo
                 yield response
                 zrow = res.fetchone()
         except Exception as ex:
-            print(ex, file=sys.stderr)
-            raise ex
+            BasicTui.DisplayError(ex)
         return None
 
     
@@ -113,7 +116,7 @@ WHERE (B.ID=BookID) AND BOOK LIKE '%{book}%' AND BookChapterID='{chapt}' AND Boo
     
     @staticmethod
     def ListBooks(bSaints=False) -> list():
-        ''' Get the major books '''
+        ''' Get the major books. Emply list on error. '''
         results = list()
         dao = SierraDAO.GetDAO(bSaints)
         if not dao:
@@ -134,17 +137,20 @@ WHERE (B.ID=BookID) AND BOOK LIKE '%{book}%' AND BookChapterID='{chapt}' AND Boo
             result = dao.conn.execute(cmd)
             return tuple(result.fetchone())
         except Exception as ex:
-            print(ex)
+            BasicTui.DisplayError(ex)
             return None
                 
 if __name__ == "__main__":
     ''' Ye Olde Testing '''
     from tui import BasicTui
-    for ss, row in enumerate(SierraDAO.ListBooks(True), 1):
-        print(ss, row)
-    for ss, row in enumerate(SierraDAO.ListBooks(True), 1):
-        print(ss * 1000, row)
-    dao = SierraDAO.GetDAO()
+    rows = SierraDAO.ListBooks(True)
+    if len(list(rows)) != 81:
+        BasicTui.DisplayError("Testing Failure - No Books?")
+        quit()
 
-    for row in dao.search("verse LIKE '%PERFECT%'"):
-        BasicTui.DisplayVerse(row)
+    dao = SierraDAO.GetDAO()
+    rows = dao.search("verse LIKE '%PERFECT%'")
+    if len(list(rows)) != 124:
+        BasicTui.DisplayError("Testing Failure")
+    else:
+        BasicTui.Display("Testing Success")        

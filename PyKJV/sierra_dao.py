@@ -2,10 +2,10 @@
 File: sierra_dao.py
 Problem Domain: Database / DAO
 Status: PRODUCTION / STABLE
-Revision: 1.5
+Revision: 1.5.1
 
 Source: 
-https://github.com/soft9000/TheBibleProjects/tree/main/BibliaWeb/cgi-bin
+https://github.com/DoctorQuote/TheBibleProjects
 
 '''
 import sys
@@ -49,7 +49,7 @@ WHERE (B.ID=BookID) AND BOOK LIKE '%{book}%' AND BookChapterID='{chapt}' AND Boo
             
     def search_verse(self, sierra_num):
         ''' Lookup a single sierra verse number. Presently unloved. '''
-        for result in self.search(f"V.ID={sierra_num} LIMIT 1"):
+        for result in self.search(f"V.ID={sierra_num}"):
             yield result
 
     def search_books(self):
@@ -123,18 +123,28 @@ WHERE (B.ID=BookID) AND BOOK LIKE '%{book}%' AND BookChapterID='{chapt}' AND Boo
             return results
         return books
 
-
+    @staticmethod
+    def GetBookRange(book_id:int, bSaints=True)->tuple:
+        ''' Get the minimum and maximum sierra
+            number for the book #, else None
+        '''
+        try:
+            dao = SierraDAO.GetDAO(bSaints)
+            cmd = f'select min(id), max(id) from SqlTblVerse where BookID = {book_id};'
+            result = dao.conn.execute(cmd)
+            return tuple(result.fetchone())
+        except Exception as ex:
+            print(ex)
+            return None
+                
 if __name__ == "__main__":
     ''' Ye Olde Testing '''
-    from verse import Verse
+    from tui import BasicTui
     for ss, row in enumerate(SierraDAO.ListBooks(True), 1):
         print(ss, row)
     for ss, row in enumerate(SierraDAO.ListBooks(True), 1):
         print(ss * 1000, row)
     dao = SierraDAO.GetDAO()
-    v = Verse()
+
     for row in dao.search("verse LIKE '%PERFECT%'"):
-        line = row['text']
-        print(v.center(' {0} {1}:{2} '.format(row['book'],row['chapter'],row['verse']), '='))
-        for row in v.wrap(line):
-            print(row)
+        BasicTui.DisplayVerse(row)

@@ -2,7 +2,7 @@ import textwrap
 
 class Verse:
 
-    def __init__(self, width=25, margin=5, initial_indent=' '):
+    def __init__(self, width=35, margin=5, initial_indent=' '):
         self._wrap = textwrap.TextWrapper()
         self._wrap.width = width
         self._margin = margin
@@ -20,5 +20,4 @@ class Verse:
         for w in self._wrap.wrap(line):
             rline = self._mask.format(w)
             results.append(rline)
-        results.append("\n")
         return results

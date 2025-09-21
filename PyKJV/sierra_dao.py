@@ -2,14 +2,15 @@
 File: sierra_dao.py
 Problem Domain: Database / DAO
 Status: PRODUCTION / STABLE
-Revision: 1.5
+Revision: 1.5.1
 
 Source: 
-https://github.com/soft9000/TheBibleProjects/tree/main/BibliaWeb/cgi-bin
+https://github.com/DoctorQuote/TheBibleProjects
 
 '''
 import sys
 import sqlite3
+from tui import BasicTui
 
 
 class SierraDAO:
@@ -32,24 +33,28 @@ FROM SqlTblVerse AS V JOIN SqlBooks as B WHERE (B.ID=BookID) AND {zmatch} ORDER 
            }
         return result
 
-    def classic2sierra(self, book, chapt, verse):
-        # print([book, chapt, verse], file=sys.stderr)
+    def classic2sierra(self, book:str, chapt, verse)->int:
+        ''' Convert a classic scripture reference to
+            the Sierra Bible number. (primary key.)
+            Returns None on error.
+        '''
+        # BasicTui.Display([book, chapt, verse])
         cmd = f"SELECT V.ID FROM SqlTblVerse AS V JOIN SqlBooks as B \
 WHERE (B.ID=BookID) AND BOOK LIKE '%{book}%' AND BookChapterID='{chapt}' AND BookVerseID='{verse}' LIMIT 1;"
-        print(cmd, file=sys.stderr)
+        # BasicTui.Display(cmd)
         res = self.conn.execute(cmd)
         try:
             zrow = res.fetchone()
-            print(zrow, file=sys.stderr)
+            # BasicTui.Display(zrow)
             if zrow:
                 return zrow[0]
-        except:
-            raise
+        except Exception as ex:
+            BasicTui.DisplayError(ex)
         return None
             
     def search_verse(self, sierra_num):
-        ''' Lookup a single sierra verse number. Presently unloved. '''
-        for result in self.search(f"V.ID={sierra_num} LIMIT 1"):
+        ''' Lookup a single sierra verse number.'''
+        for result in self.search(f"V.ID={sierra_num}"):
             yield result
 
     def search_books(self):
@@ -70,8 +75,7 @@ WHERE (B.ID=BookID) AND BOOK LIKE '%{book}%' AND BookChapterID='{chapt}' AND Boo
                 yield response
                 zrow = res.fetchone()
         except Exception as ex:
-            print(ex, file=sys.stderr)
-            raise ex
+            BasicTui.DisplayError(ex)
         return None
     
     def search(self, where_clause):
@@ -96,8 +100,7 @@ WHERE (B.ID=BookID) AND BOOK LIKE '%{book}%' AND BookChapterID='{chapt}' AND Boo
                 yield response
                 zrow = res.fetchone()
         except Exception as ex:
-            print(ex, file=sys.stderr)
-            raise ex
+            BasicTui.DisplayError(ex)
         return None
 
     
@@ -113,7 +116,7 @@ WHERE (B.ID=BookID) AND BOOK LIKE '%{book}%' AND BookChapterID='{chapt}' AND Boo
     
     @staticmethod
     def ListBooks(bSaints=False) -> list():
-        ''' Get the major books '''
+        ''' Get the major books. Emply list on error. '''
         results = list()
         dao = SierraDAO.GetDAO(bSaints)
         if not dao:
@@ -123,18 +126,31 @@ WHERE (B.ID=BookID) AND BOOK LIKE '%{book}%' AND BookChapterID='{chapt}' AND Boo
             return results
         return books
 
-
+    @staticmethod
+    def GetBookRange(book_id:int, bSaints=True)->tuple:
+        ''' Get the minimum and maximum sierra
+            number for the book #, else None
+        '''
+        try:
+            dao = SierraDAO.GetDAO(bSaints)
+            cmd = f'select min(id), max(id) from SqlTblVerse where BookID = {book_id};'
+            result = dao.conn.execute(cmd)
+            return tuple(result.fetchone())
+        except Exception as ex:
+            BasicTui.DisplayError(ex)
+            return None
+                
 if __name__ == "__main__":
     ''' Ye Olde Testing '''
-    from verse import Verse
-    for ss, row in enumerate(SierraDAO.ListBooks(True), 1):
-        print(ss, row)
-    for ss, row in enumerate(SierraDAO.ListBooks(True), 1):
-        print(ss * 1000, row)
+    from tui import BasicTui
+    rows = SierraDAO.ListBooks(True)
+    if len(list(rows)) != 81:
+        BasicTui.DisplayError("Testing Failure - No Books?")
+        quit()
+
     dao = SierraDAO.GetDAO()
-    v = Verse()
-    for row in dao.search("verse LIKE '%PERFECT%'"):
-        line = row['text']
-        print(v.center(' {0} {1}:{2} '.format(row['book'],row['chapter'],row['verse']), '='))
-        for row in v.wrap(line):
-            print(row)
+    rows = dao.search("verse LIKE '%PERFECT%'")
+    if len(list(rows)) != 124:
+        BasicTui.DisplayError("Testing Failure")
+    else:
+        BasicTui.Display("Testing Success")        

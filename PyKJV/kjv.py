@@ -15,6 +15,8 @@ NEXUS
 https://github.com/DoctorQuote/TheBibleProjects
 '''
 
+b81 = True
+
 import argparse
 from sierra_dao import SierraDAO
 from tui import BasicTui
@@ -41,7 +43,7 @@ def do_func(prompt, options, level):
                 o[2]()
 
 
-def do_search_books(bSaints=True):
+def do_search_books():
     ''' Search books & read from results. '''
     BasicTui.Display("Example: +word -word")
     BasicTui.Display("Enter q to quit")
@@ -60,7 +62,7 @@ def do_search_books(bSaints=True):
             count += 1
     if not count:
         return
-    dao = SierraDAO.GetDAO(bSaints)
+    dao = SierraDAO.GetDAO(b81)
     BasicTui.Display(inc)
     sigma = 0
     for row in dao.search(inc):
@@ -69,18 +71,18 @@ def do_search_books(bSaints=True):
     BasicTui.DisplayTitle(f"Found {sigma} Verses")
 
 
-def do_list_books(bSaints=True):
+def do_list_books():
     ''' Displays the books. Saint = superset. Returns number
         of books displayed to permit selections of same.
     '''
     return BasicTui.DisplayBooks()
 
 
-def do_random_reader(bSaints=True)->int:
+def do_random_reader()->int:
     ''' Start reading at a random location.
         Return the last Sierra number shown.
     '''
-    dao = SierraDAO.GetDAO(bSaints)
+    dao = SierraDAO.GetDAO(b81)
     res = dao.conn.execute('SELECT COUNT(*) FROM SqlTblVerse;')
     vmax = res.fetchone()[0]+1
     import random    
@@ -88,13 +90,13 @@ def do_random_reader(bSaints=True)->int:
     return browse_from(sierra)
 
 
-def do_sierra_reader(bSaints=True)->int:
+def do_sierra_reader()->int:
     ''' Start reading at a Sierra location.
         Return the last Sierra number shown.
         Zero on error.
     '''
     books = []
-    for row in SierraDAO.ListBooks(bSaints):
+    for row in SierraDAO.ListBooks(b81):
         books.append(row['book'].lower())
     last_book = do_list_books()
     option = BasicTui.Input('Book # > ')
@@ -111,27 +113,70 @@ def do_sierra_reader(bSaints=True)->int:
         return 0
 
 
-def do_classic_reader(bSaints=True):
+def do_classic_reader():
     ''' Start browsing by classic chapter:verse. '''
     BasicTui.DisplayBooks()
     try:
         ibook = int(BasicTui.Input("Book #> "))
         ichapt = int(BasicTui.Input("Chapter #> "))
         iverse = int(BasicTui.Input("Verse #> "))
-        dao = SierraDAO.GetDAO(bSaints)
+        dao = SierraDAO.GetDAO(b81)
         for res in dao.search(f'BookID = {ibook} AND BookChapterID = {ichapt} AND BookVerseID = {iverse}'):
             browse_from(dict(res)['sierra'])
     except Exception as ex:
         BasicTui.DisplayError(ex)
 
+def edit_notes(sierra):
+    from sierra_note import NoteDAO
+    sierra = int(sierra)
+    notes = []
+    dao = NoteDAO.GetDAO(b81)
+    for ss, note in enumerate(dao.notes_for(sierra),1):
+        line = f'{ss}.) {note[5]}'
+        BasicTui.Display(line)
+        notes.append(note)
+    try:
+        inum = int(BasicTui.Input("Number to edit > ")) - 1
+        if inum >= len(notes):
+            raise Exception()
+        znote = BasicTui.Input('Notes: ').strip()
+        if not znote:
+            ok = BasicTui.Input('Delete Note (N/y) ?').strip()
+            if ok and ok.lower()[0] == 'y':
+                print('okeeeee')
+                dao.delete_note(notes[inum][0])
+                BasicTui.Display('Note deleted.')
+                return
+            else:
+                raise Exception()
+        dao.update_note(notes[inum][0], znote)
+        BasicTui.Display('Note updated.')
+    except:
+        BasicTui.Display('done')
+
+def make_note(sierra):
+    from sierra_note import NoteDAO
+    sierra = int(sierra)
+    BasicTui.Display("Use .edit. to fix notes")
+    notes = BasicTui.Input('Notes: ').strip()
+    if not notes:
+        BasicTui.Display("No note.")
+        return
+    if notes == '.edit.':
+        edit_notes(sierra)
+        return
+    dao = NoteDAO.GetDAO(b81)
+    dao.insert_note(sierra, notes)
+    BasicTui.Display(f"Note added for {sierra}.")
     
-def browse_from(sierra,bSaints=True)->int:
+    
+def browse_from(sierra)->int:
     ''' Start reading at a Sierra location.
         Return the last Sierra number shown.
         Zero on error.
     '''
     sierra = int(sierra)
-    dao = SierraDAO.GetDAO(bSaints)
+    dao = SierraDAO.GetDAO(b81)
     res = dao.conn.execute('SELECT COUNT(*) FROM SqlTblVerse;')
     vmax = res.fetchone()[0]+1
     
@@ -141,17 +186,23 @@ def browse_from(sierra,bSaints=True)->int:
         if not BasicTui.DisplayVerse(verse):
             return 0
         # do_func too much for a reader, methinks.
-        option = BasicTui.Input('[n]ext, [p]revious, [q]uit > ').strip()
+        option = BasicTui.Input('?, @, n, p, [q]uit > ').strip()
         if not option:
-            continue
+            option = 'n'
         try:
             o = option[0]
-            if o == 'n':
-                if sierra == vmax:
-                    BasicTui.Display('At the end.')
-                    continue
-                sierra += 1
-                verse = dict(*dao.search_verse(sierra))
+            if o == '?':
+                BasicTui.DisplayTitle('HELP')
+                BasicTui.Display('? = help')
+                BasicTui.Display('@ = note')
+                BasicTui.Display('n = next page')
+                BasicTui.Display('p = last page')
+                BasicTui.Display('q = quit')
+                continue
+            if o == '@':
+                BasicTui.DisplayTitle('NOTE')
+                make_note(sierra)
+                continue
             elif o == 'p':
                 if sierra == 1:
                     BasicTui.Display('At the top.')
@@ -160,22 +211,27 @@ def browse_from(sierra,bSaints=True)->int:
                 verse = dict(*dao.search_verse(sierra))
             elif o == 'q':
                 return sierra
-            else:
-                BasicTui.Display('Enter either n, p, or q.')
+            else: # default is 'n'
+                if sierra == vmax:
+                    BasicTui.Display('At the end.')
+                    continue
+                sierra += 1
+                verse = dict(*dao.search_verse(sierra))
         except Exception as ex:
             BasicTui.DisplayError(ex)
             return sierra
 
 
-options = [
-    ("b", "List Books", do_list_books),
-    ("v", "Sierra Reader", do_sierra_reader),
-    ("c", "Classic Reader", do_classic_reader),
-    ("r", "Random Reader", do_random_reader),
-    ("s", "Search", do_search_books),
-    ("q", "Quit", dum)
-]
-
-BasicTui.SetTitle('The Stick of Joseph')
-do_func("Main Menu: ", options, '#')
-BasicTui.Display(".")
+if __name__ == '__main__':
+    b81 = True
+    options = [
+        ("b", "List Books", do_list_books),
+        ("v", "Sierra Reader", do_sierra_reader),
+        ("c", "Classic Reader", do_classic_reader),
+        ("r", "Random Reader", do_random_reader),
+        ("s", "Search", do_search_books),
+        ("q", "Quit", dum)
+    ]
+    BasicTui.SetTitle('The Stick of Joseph')
+    do_func("Main Menu: ", options, '#')
+    BasicTui.Display(".")

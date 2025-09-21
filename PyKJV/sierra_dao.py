@@ -51,6 +51,7 @@ WHERE (B.ID=BookID) AND BOOK LIKE '%{book}%' AND BookChapterID='{chapt}' AND Boo
         except Exception as ex:
             BasicTui.DisplayError(ex)
         return None
+
             
     def search_verse(self, sierra_num):
         ''' Lookup a single sierra verse number.'''
@@ -103,14 +104,22 @@ WHERE (B.ID=BookID) AND BOOK LIKE '%{book}%' AND BookChapterID='{chapt}' AND Boo
             BasicTui.DisplayError(ex)
         return None
 
-    
     @staticmethod
-    def GetDAO(bSaints=False):
+    def GetNotes(sierra:int):
+        ''' get notes for verse '''
+        from sierra_notes import SqlNote
+        dao = GetDAO(True)
+        for row in dao.search_notes(sierra):
+            yield row
+   
+    @staticmethod
+    def GetDAO(bSaints=False, database="./biblia.sqlt3"):
         ''' Connect to the database & return the DAO '''
-        conn = sqlite3.connect("./biblia.sqlt3")
+        conn = sqlite3.connect(database)
         # conn.row_factory = dict_factory
         curs = conn.cursor()
         dao = SierraDAO(curs, bSaints)
+        dao.database = database
         return dao
 
     

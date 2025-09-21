@@ -1,5 +1,5 @@
-from verse import Verse
-v = Verse()
+from pannel import Panel
+lwrap = Panel()
 
 class BasicTui:
 
@@ -9,7 +9,7 @@ class BasicTui:
 
     @staticmethod
     def IsAnsi():
-        ''' Best-guess to see if we've ANSI colors. '''
+        ''' Best-guess to see if we'lwrape ANSI colors. '''
         import sys
         if sys.platform == 'win32':
             return False
@@ -29,10 +29,10 @@ class BasicTui:
     @staticmethod
     def DisplayTitle(title:str, char='*'):
         ''' Common UI. '''
-        print(v.wrap(char * v._wrap.width)[0])
-        for zline in v.wrap(title.strip()):
+        print(lwrap.wrap(char * lwrap._wrap.width)[0])
+        for zline in lwrap.wrap(title.strip()):
             print(zline)
-        print(v.wrap(char * v._wrap.width)[0])
+        print(lwrap.wrap(char * lwrap._wrap.width)[0])
         
     @staticmethod
     def DisplayBooks(bSaints=True):
@@ -59,21 +59,61 @@ class BasicTui:
         if not args:
             return False
         line = ' '.join(args)
-        for zline in v.wrap(line.strip()):
+        for zline in lwrap.wrap(line.strip()):
             print(zline)
         return True
+
    
     @staticmethod
     def DisplayVerse(row:dict)->bool:
+        ''' Common display for all verses. '''
+        from sierra_note import NoteDAO
+        if not row:
+            print('[null]')
+            return False
+        line = row['text']
+        
+        print(lwrap.center(' {0} {1}:{2} '.format(
+            row['book'],row['chapter'],row['verse']), '='))
+        left = []
+        for zline in lwrap.wrap(line.strip()):
+            left.append(zline)
+        dao = NoteDAO.GetDAO(True)
+        right = []
+        for note in dao.notes_for(row['sierra']):
+            for zline in lwrap.wrap(note[5].strip()):
+                right.append(zline)
+        ll=len(left);lr = len(right)
+        if not lr:
+            for zline in left:
+                print(zline)
+        else:
+            space = 0
+            for ss in range(max(ll,lr)):
+                if ss < ll:
+                    space = len(left[ss])
+                    print(left[ss], end='')
+                elif ss >= ll:
+                    print(' '* space, end='') 
+                if ss < lr:
+                    print(right[ss], end='')
+                print()
+                           
+        print(lwrap.center(' Sierra Bible #{0} '.format(
+            row['sierra']), '='))
+        return True
+   
+    @staticmethod
+    def DisplayVerseO(row:dict)->bool:
         ''' Common display for all verses. '''
         if not row:
             print('[null]')
             return False
         line = row['text']
-        print(v.center(' {0} {1}:{2} '.format(
+        print(lwrap.center(' {0} {1}:{2} '.format(
             row['book'],row['chapter'],row['verse']), '='))
-        for zline in v.wrap(line.strip()):
+        for zline in lwrap.wrap(line.strip()):
             print(zline)
-        print(v.center(' Sierra Bible #{0} '.format(
+        print(lwrap.center(' Sierra Bible #{0} '.format(
             row['sierra']), '='))
         return True

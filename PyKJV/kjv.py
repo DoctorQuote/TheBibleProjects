@@ -2,7 +2,7 @@
 '''
 File: kjv.py
 Problem Domain: Console Application
-Status: WORK IN PROGRESS
+Status: Production
 Revision: 1.0.0
 
 MISSION
@@ -24,6 +24,7 @@ def dum():
 
 
 def do_func(prompt, options, level):
+    '''Menued operations. '''
     choice = None
     while choice != options[-1][0]:
         BasicTui.Display(level * 15)
@@ -40,25 +41,11 @@ def do_func(prompt, options, level):
                 o[2]()
 
 
-def do_book_cv(bSaints=True):
-    ''' Start browsing by classic chapter:verse. '''
-    BasicTui.DisplayBooks()
-    try:
-        ibook = int(BasicTui.Input("Book #> "))
-        ichapt = int(BasicTui.Input("Chapter #> "))
-        iverse = int(BasicTui.Input("Verse #> "))
-        dao = SierraDAO.GetDAO(bSaints)
-        for res in dao.search(f'BookID = {ibook} AND BookChapterID = {ichapt} AND BookVerseID = {iverse}'):
-            browse_from(dict(res)['sierra'])
-    except Exception as ex:
-        BasicTui.DisplayError(ex)
-
-
 def do_search_books(bSaints=True):
     ''' Search books & read from results. '''
     BasicTui.Display("Example: +word -word")
     BasicTui.Display("Enter q to quit")
-    inc = ''
+    inc = ''; count = 0
     words = BasicTui.Input("+/-words: ")
     for word in words.strip().split(' '):
         if not word or word == 'q':
@@ -67,8 +54,12 @@ def do_search_books(bSaints=True):
             inc += ' AND '
         if word[0] == '-':
             inc += f'VERSE NOT LIKE "%{word[1:]}%"'
+            count += 1
         if word[0] == '+':
             inc += f'VERSE LIKE "%{word[1:]}%"'
+            count += 1
+    if not count:
+        return
     dao = SierraDAO.GetDAO(bSaints)
     BasicTui.Display(inc)
     sigma = 0
@@ -76,6 +67,7 @@ def do_search_books(bSaints=True):
         sigma += 1
         BasicTui.DisplayVerse(row)
     BasicTui.DisplayTitle(f"Found {sigma} Verses")
+
 
 def do_list_books(bSaints=True):
     ''' Displays the books. Saint = superset. Returns number
@@ -96,7 +88,7 @@ def do_random_reader(bSaints=True)->int:
     return browse_from(sierra)
 
 
-def do_reader(bSaints=True)->int:
+def do_sierra_reader(bSaints=True)->int:
     ''' Start reading at a Sierra location.
         Return the last Sierra number shown.
         Zero on error.
@@ -117,6 +109,21 @@ def do_reader(bSaints=True)->int:
         return browse_from(int(option))               
     except:
         return 0
+
+
+def do_classic_reader(bSaints=True):
+    ''' Start browsing by classic chapter:verse. '''
+    BasicTui.DisplayBooks()
+    try:
+        ibook = int(BasicTui.Input("Book #> "))
+        ichapt = int(BasicTui.Input("Chapter #> "))
+        iverse = int(BasicTui.Input("Verse #> "))
+        dao = SierraDAO.GetDAO(bSaints)
+        for res in dao.search(f'BookID = {ibook} AND BookChapterID = {ichapt} AND BookVerseID = {iverse}'):
+            browse_from(dict(res)['sierra'])
+    except Exception as ex:
+        BasicTui.DisplayError(ex)
+
     
 def browse_from(sierra,bSaints=True)->int:
     ''' Start reading at a Sierra location.
@@ -134,7 +141,9 @@ def browse_from(sierra,bSaints=True)->int:
         if not BasicTui.DisplayVerse(verse):
             return 0
         # do_func too much for a reader, methinks.
-        option = BasicTui.Input('[n]ext, [p]revious, [q]uit > ')
+        option = BasicTui.Input('[n]ext, [p]revious, [q]uit > ').strip()
+        if not option:
+            continue
         try:
             o = option[0]
             if o == 'n':
@@ -160,12 +169,13 @@ def browse_from(sierra,bSaints=True)->int:
 
 options = [
     ("b", "List Books", do_list_books),
-    ("v", "Sierra Reader", do_reader),
-    ("c", "Classic Reader", do_book_cv),
+    ("v", "Sierra Reader", do_sierra_reader),
+    ("c", "Classic Reader", do_classic_reader),
     ("r", "Random Reader", do_random_reader),
     ("s", "Search", do_search_books),
     ("q", "Quit", dum)
 ]
 
+BasicTui.SetTitle('The Stick of Joseph')
 do_func("Main Menu: ", options, '#')
 BasicTui.Display(".")

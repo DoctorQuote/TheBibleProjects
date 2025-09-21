@@ -2,6 +2,18 @@ from verse import Verse
 v = Verse()
 
 class BasicTui:
+
+    @staticmethod
+    def SetTitle(title:str):
+        pass # ignored, for now.
+
+    @staticmethod
+    def IsAnsi():
+        ''' Best-guess to see if we've ANSI colors. '''
+        import sys
+        if sys.platform == 'win32':
+            return False
+        return sys.stdout.isatty()
     
     @staticmethod
     def ClearScreen():
@@ -11,10 +23,12 @@ class BasicTui:
     
     @staticmethod
     def Input(prompt:str)->str:
+        ''' Great for testing. '''
         return input(prompt)
 
     @staticmethod
     def DisplayTitle(title:str, char='*'):
+        ''' Common UI. '''
         print(v.wrap(char * v._wrap.width)[0])
         for zline in v.wrap(title.strip()):
             print(zline)

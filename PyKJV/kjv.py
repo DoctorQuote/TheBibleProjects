@@ -3,7 +3,7 @@
 File: kjv.py
 Problem Domain: Console Application
 Status: WORK IN PROGRESS
-Revision: -1
+Revision: 1.0.0
 
 MISSION
 =======
@@ -36,28 +36,46 @@ def do_func(prompt, options, level):
         BasicTui.Display(f">> {choice}")
         for o in options:
             if o[0] == choice:
-                BasicTui.Display(o[1])
+                BasicTui.DisplayTitle(o[1])
                 o[2]()
-                break
 
 
-def do_book_cv():
-    BasicTui.Display('do_book_cv')
+def do_book_cv(bSaints=True):
+    ''' Start browsing by classic chapter:verse. '''
+    BasicTui.DisplayBooks()
+    try:
+        ibook = int(BasicTui.Input("Book #> "))
+        ichapt = int(BasicTui.Input("Chapter #> "))
+        iverse = int(BasicTui.Input("Verse #> "))
+        dao = SierraDAO.GetDAO(bSaints)
+        for res in dao.search(f'BookID = {ibook} AND BookChapterID = {ichapt} AND BookVerseID = {iverse}'):
+            browse_from(dict(res)['sierra'])
+    except Exception as ex:
+        BasicTui.DisplayError(ex)
 
 
-def do_book_vnum():
-    BasicTui.Display('do_book_vnum')
-
-
-def do_search():
-    options = [
-    ("b", "List Books", do_list_books),
-    ("c", "book:chapter:verse", do_book_cv),
-    ("a", "absolute verse #", do_book_vnum),
-    ("q", "Quit", dum)
-    ]
-    do_func("Search Menu: ", options, '~')
-
+def do_search_books(bSaints=True):
+    ''' Search books & read from results. '''
+    BasicTui.Display("Example: +word -word")
+    BasicTui.Display("Enter q to quit")
+    inc = ''
+    words = BasicTui.Input("+/-words: ")
+    for word in words.strip().split(' '):
+        if not word or word == 'q':
+            return
+        if inc:
+            inc += ' AND '
+        if word[0] == '-':
+            inc += f'VERSE NOT LIKE "%{word[1:]}%"'
+        if word[0] == '+':
+            inc += f'VERSE LIKE "%{word[1:]}%"'
+    dao = SierraDAO.GetDAO(bSaints)
+    BasicTui.Display(inc)
+    sigma = 0
+    for row in dao.search(inc):
+        sigma += 1
+        BasicTui.DisplayVerse(row)
+    BasicTui.DisplayTitle(f"Found {sigma} Verses")
 
 def do_list_books(bSaints=True):
     ''' Displays the books. Saint = superset. Returns number
@@ -105,6 +123,7 @@ def browse_from(sierra,bSaints=True)->int:
         Return the last Sierra number shown.
         Zero on error.
     '''
+    sierra = int(sierra)
     dao = SierraDAO.GetDAO(bSaints)
     res = dao.conn.execute('SELECT COUNT(*) FROM SqlTblVerse;')
     vmax = res.fetchone()[0]+1
@@ -141,9 +160,10 @@ def browse_from(sierra,bSaints=True)->int:
 
 options = [
     ("b", "List Books", do_list_books),
-    ("v", "Verse Reader", do_reader),
+    ("v", "Sierra Reader", do_reader),
+    ("c", "Classic Reader", do_book_cv),
     ("r", "Random Reader", do_random_reader),
-    ("s", "Search", do_search),
+    ("s", "Search", do_search_books),
     ("q", "Quit", dum)
 ]
 

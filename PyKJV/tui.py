@@ -12,7 +12,14 @@ class BasicTui:
     @staticmethod
     def Input(prompt:str)->str:
         return input(prompt)
-    
+
+    @staticmethod
+    def DisplayTitle(title:str, char='*'):
+        print(v.wrap(char * v._wrap.width)[0])
+        for zline in v.wrap(title.strip()):
+            print(zline)
+        print(v.wrap(char * v._wrap.width)[0])
+        
     @staticmethod
     def DisplayBooks(bSaints=True):
         ''' Displays the books. Saint = superset. Returns number
@@ -24,12 +31,13 @@ class BasicTui:
                 print(f"{ss:02}.) {book['book']:<18}")
             else:
                 print(f"{ss:02}.) {book['book']:<18}", end = '')
+        print()
         return ss
        
     @staticmethod
     def DisplayError(line:str)->bool:
         ''' Common display for all errors. '''
-        return BasicTui.Display(line)
+        return BasicTui.Display(str(line))
     
     @staticmethod
     def Display(*args)->bool:

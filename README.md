@@ -40,6 +40,6 @@ Application: Console Application (Universal UI!)
 
 Technologies: Python, SQLite, Classic / Console TUI
 
-Bible: Either / Both of above
+Bible: The "Stick of Joseph" ;-)
 
 

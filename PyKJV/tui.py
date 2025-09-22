@@ -68,6 +68,7 @@ class BasicTui:
     def DisplayVerse(row:dict)->bool:
         ''' Common display for all verses. '''
         from sierra_note import NoteDAO
+        from sierra_fav  import FavDAO
         if not row:
             print('[null]')
             return False
@@ -78,8 +79,11 @@ class BasicTui:
         left = []
         for zline in lwrap.wrap(line.strip()):
             left.append(zline)
-        dao = NoteDAO.GetDAO(True)
         right = []
+        dao = FavDAO.GetDAO(True)
+        if dao.is_fav(row['sierra']):
+            right.append(*lwrap.wrap('* Starred *'))
+        dao = NoteDAO.GetDAO(True)
         for note in dao.notes_for(row['sierra']):
             for zline in lwrap.wrap(note[5].strip()):
                 right.append(zline)

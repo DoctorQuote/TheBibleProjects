@@ -18,7 +18,9 @@ https://github.com/DoctorQuote/TheBibleProjects
 b81 = True
 
 import argparse
-from sierra_dao import SierraDAO
+from sierra_dao  import SierraDAO
+from sierra_note import NoteDAO
+from sierra_fav  import FavDAO
 from tui import BasicTui
 
 def dum():
@@ -126,8 +128,8 @@ def do_classic_reader():
     except Exception as ex:
         BasicTui.DisplayError(ex)
 
+
 def edit_notes(sierra):
-    from sierra_note import NoteDAO
     sierra = int(sierra)
     notes = []
     dao = NoteDAO.GetDAO(b81)
@@ -153,6 +155,7 @@ def edit_notes(sierra):
         BasicTui.Display('Note updated.')
     except:
         BasicTui.Display('done')
+
 
 def make_note(sierra):
     from sierra_note import NoteDAO
@@ -186,7 +189,7 @@ def browse_from(sierra)->int:
         if not BasicTui.DisplayVerse(verse):
             return 0
         # do_func too much for a reader, methinks.
-        option = BasicTui.Input('?, @, n, p, [q]uit > ').strip()
+        option = BasicTui.Input('?, *, @, n, p, [q]uit > ').strip()
         if not option:
             option = 'n'
         try:
@@ -194,10 +197,20 @@ def browse_from(sierra)->int:
             if o == '?':
                 BasicTui.DisplayTitle('HELP')
                 BasicTui.Display('? = help')
-                BasicTui.Display('@ = note')
+                BasicTui.Display('* = toggle star')
+                BasicTui.Display('@ = manage notes')
                 BasicTui.Display('n = next page')
                 BasicTui.Display('p = last page')
                 BasicTui.Display('q = quit')
+                continue
+            if o == '*':
+                BasicTui.DisplayTitle('STAR')
+                fdao = FavDAO.GetDAO()
+                fdao.toggle_fav(sierra)
+                if fdao.is_fav(sierra):
+                    BasicTui.Display(f'Starred {sierra}!')
+                else:
+                    BasicTui.Display(f'De-starred {sierra}.')
                 continue
             if o == '@':
                 BasicTui.DisplayTitle('NOTE')
@@ -221,8 +234,31 @@ def browse_from(sierra)->int:
             BasicTui.DisplayError(ex)
             return sierra
 
+def show_verse(sierra):
+    dao = SierraDAO.GetDAO(b81)
+    verse = dict(*dao.search_verse(sierra))
+    BasicTui.DisplayVerse(verse)    
+
+def do_search_stars():
+    dao = FavDAO.GetDAO()
+    count = 0
+    for fav in dao.get_favs():
+        count += 1
+        show_verse(fav[0])
+    BasicTui.DisplayTitle(f'There are {count} Stars.')
+    
+def do_search_notes():
+    dao = NoteDAO.GetDAO()
+    count = 0
+    for fav in dao.get_notes():
+        count += 1
+        show_verse(fav[1])
+    BasicTui.DisplayTitle(f'There are {count} Notes.') 
 
 if __name__ == '__main__':
+##    from admin_ops import cleanup, create_tables
+##    create_tables()
+##    cleanup()
     b81 = True
     options = [
         ("b", "List Books", do_list_books),
@@ -230,8 +266,10 @@ if __name__ == '__main__':
         ("c", "Classic Reader", do_classic_reader),
         ("r", "Random Reader", do_random_reader),
         ("s", "Search", do_search_books),
+        ("@", "Notes", do_search_notes),
+        ("*", "Stars", do_search_stars),
         ("q", "Quit", dum)
     ]
     BasicTui.SetTitle('The Stick of Joseph')
-    do_func("Main Menu: ", options, '#')
+    do_func("Main Menu: ", options, ' ')
     BasicTui.Display(".")

@@ -4,8 +4,23 @@ tables = {
     'SqlTblVerse':'CREATE TABLE IF NOT EXISTS SqlTblVerse (ID Integer PRIMARY KEY AUTOINCREMENT, BookID int, BookChapterID int, BookVerseID int, Verse String, VerseType int);',
     'SqlNotes'   :'CREATE TABLE IF NOT EXISTS SqlNotes (ID Integer PRIMARY KEY AUTOINCREMENT, vStart int, vEnd int, kwords String, Subject String, Notes String, NextId int);',
     'SqlBooks'   :'CREATE TABLE IF NOT EXISTS SqlBooks (ID Integer PRIMARY KEY AUTOINCREMENT, Book String, BookMeta String);',
+    'SqlFav'     :'CREATE TABLE IF NOT EXISTS SqlFav   (item Integer);',
     }
 
+def cleanup():
+    dao = SierraDAO.GetDAO()
+    dao.conn.execute('vacuum')
+    dao.conn.connection.commit()
+
+
+def create_tables():
+    ''' Create requesite tables iff they do not already exist. '''
+    dao = SierraDAO.GetDAO()
+    for key in tables:
+        dao.conn.execute(tables[key])
+    dao.conn.connection.commit()
+
+    
 def destroy_notes():
     ''' Re-create the SqlNotes Table from scratch. Will destroy SqlNotes!'''
     key = 'SqlNotes'

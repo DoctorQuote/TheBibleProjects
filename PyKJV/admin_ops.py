@@ -1,8 +1,19 @@
+from sierra_dao import SierraDAO
+    
 tables = {
     'SqlTblVerse':'CREATE TABLE IF NOT EXISTS SqlTblVerse (ID Integer PRIMARY KEY AUTOINCREMENT, BookID int, BookChapterID int, BookVerseID int, Verse String, VerseType int);',
     'SqlNotes'   :'CREATE TABLE IF NOT EXISTS SqlNotes (ID Integer PRIMARY KEY AUTOINCREMENT, vStart int, vEnd int, kwords String, Subject String, Notes String, NextId int);',
     'SqlBooks'   :'CREATE TABLE IF NOT EXISTS SqlBooks (ID Integer PRIMARY KEY AUTOINCREMENT, Book String, BookMeta String);',
     }
+
+def destroy_notes():
+    ''' Re-create the SqlNotes Table from scratch. Will destroy SqlNotes!'''
+    key = 'SqlNotes'
+    dao = SierraDAO.GetDAO()
+    dao.conn.execute(f'DROP TABLE IF EXISTS {key};')
+    dao.conn.execute(tables[key])
+    dao.conn.connection.commit()
+    
 
 def destroy_everything():
     ''' Re-create the database from scratch. Will destroy SqlNotes!'''
@@ -11,7 +22,7 @@ def destroy_everything():
     zfile = r'C:\d_drive\USR\code\TheBibleProjects\TheBibleProjects-main\SierraBible\biblia\b1.tab'
     if not os.path.exists(zfile):
         return
-    from sierra_dao import SierraDAO
+
     dao = SierraDAO.GetDAO()
     for key in tables:
         dao.conn.execute(f'DROP TABLE IF EXISTS {key};')

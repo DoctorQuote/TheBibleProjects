@@ -7,7 +7,17 @@ tables = {
     'SqlFav'     :'CREATE TABLE IF NOT EXISTS SqlFav   (item Integer);',
     }
 
+def destory_notes_and_fav():
+    ''' Handy when cleaning-up after r&d (etc.) '''
+    dao = SierraDAO.GetDAO()
+    for key in 'SqlNotes', 'SqlFav':
+        dao.conn.execute(f'DROP TABLE IF EXISTS {key};')
+        dao.conn.execute(tables[key])
+    dao.conn.connection.commit()
+
+
 def cleanup():
+    ''' Tightent-up / vacuum the database. '''
     dao = SierraDAO.GetDAO()
     dao.conn.execute('vacuum')
     dao.conn.connection.commit()

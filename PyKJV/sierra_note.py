@@ -17,6 +17,12 @@ class NoteDAO():
 ##        self.Notes  = Notes
 ##        self.NextId = NextId
 
+    def encode(self, text):
+        return text.replace('"',"''")
+    
+    def decode(self, text):
+        return text.replace("''",'"')
+    
     @staticmethod
     def GetDAO(bSaints=False, database="./biblia.sqlt3"):
         ''' Connect to the database & return the DAO '''
@@ -25,6 +31,7 @@ class NoteDAO():
         return result
 
     def insert_note(self, sierra:int, note:str)->bool:
+        note = self.encode(note)
         cmd = f'INSERT INTO SqlNotes (vStart, Notes) VALUES ({sierra}, "{note}");'
         self.dao.conn.execute(cmd)
         self.dao.conn.connection.commit()
@@ -37,6 +44,7 @@ class NoteDAO():
         return True
         
     def update_note(self, zid, znote)->bool:
+        znote = self.encode(znote)
         cmd = f'UPDATE SqlNotes SET Notes="{znote}" WHERE ID = {zid};'
         self.dao.conn.execute(cmd)
         self.dao.conn.connection.commit()
@@ -48,7 +56,9 @@ class NoteDAO():
         try:
             res = self.dao.conn.execute(cmd)
             for a in res:
-                yield a
+                l = list(a)
+                l[5] = self.decode(l[5])
+                yield l
         except Exception as ex:
             BasicTui.DisplayError(ex)
         return None
@@ -59,7 +69,9 @@ class NoteDAO():
         try:
             res = self.dao.conn.execute(cmd)
             for a in res:
-                yield a
+                l = list(a)
+                l[5] = self.decode(l[5])
+                yield l
         except Exception as ex:
             BasicTui.DisplayError(ex)
         return None

@@ -270,6 +270,7 @@ if __name__ == '__main__':
         ("*", "Stars", do_search_stars),
         ("q", "Quit", dum)
     ]
+    BasicTui.ClearScreen()
     BasicTui.SetTitle('The Stick of Joseph')
     do_func("Main Menu: ", options, ' ')
     BasicTui.Display(".")

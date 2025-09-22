@@ -5,7 +5,10 @@ class BasicTui:
 
     @staticmethod
     def SetTitle(title:str):
-        pass # ignored, for now.
+        line = ' '.join(('~'*3, title, '~'*3)).center(34)
+        print('~'*len(line))
+        print(line)
+        print('~'*len(line))
 
     @staticmethod
     def IsAnsi():

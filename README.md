@@ -1,5 +1,4 @@
 # The Bible Projects
-
 Pure religion has nothing to do with me controlling you - it has to do with God, controlling me. 
 
 Adam, after all, was permitted to do whatever she did.
@@ -40,6 +39,6 @@ Application: Console Application (Universal UI!)
 
 Technologies: Python, SQLite, Classic / Console TUI
 
-Bible: The "Stick of Joseph" ;-)
+Bible: The ["Stick of Joseph"](https://pypi.org/project/Bible9000/) ;-)
 
 
